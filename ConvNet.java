@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -37,6 +38,16 @@ public class NeuralNet {
     int strideX = 5;
     int strideY = 5;
     int numFilters;
+    
+    
+    //Output of forward prop (since they are difference sized I made them global for simplicity
+    double[][][] convPreds;
+    double[] inputActivations;
+    double[] hiddenPreds;
+    double[] outputPreds;
+    //
+    
+    
     
     double[][] inputImage;
 	double[] imageToConvBias;
@@ -105,7 +116,6 @@ public class NeuralNet {
        for(int prediction = 0; prediction <numOutputs; prediction++){
           // System.out.println("Prediction Number : " + prediction + ", acutal prediction : " + pred[1][prediction]);
            if(pred[1][prediction] > max){
-               
                max = pred[1][prediction];
                classNum = prediction;
            }
@@ -261,21 +271,18 @@ public class NeuralNet {
      * returns 3d array z,y,x (z=0 for 2d parts of net)
      */
     //Make private
-    public double[][] forwardProp(double[][] inputImage){
-    	double[][][] convPreds = new double[convToInputWeights.length][convToInputWeights[0].length][convToInputWeights[0][0].length];
+    public void forwardProp(double[][] inputImage){
     	
-
-    	
+    	this.convPreds = new double[this.numFilters][this.imageYDim-this.strideY][this.imageXDim-this.strideX];
+    	System.out.println(convToInputWeights.length+ ", " +  convToInputWeights[0].length + " , " + convToInputWeights[0][0].length);
     	for(int filterNum = 0; filterNum<this.numFilters; filterNum++){
     		double sum = 0;
     		int startX = 0, startY = 0;
     		boolean finished = false;
     		while(!finished){
-    			
-    			
 	    		for(int currentX = startX; currentX<(startX+strideX); currentX++){
 	    			for(int currentY = startY; currentY<(startY+strideY); currentY++){
-	    				sum+= imageToConvWeights[filterNum][(currentY-startY)][(currentX-startX)]*inputImage[currentY][currentX];
+	    				sum+= imageToConvWeights[filterNum][(currentY-startY)][(currentX-startX)]*inputImage[currentY][currentX];	
 	    			}
 	    		}
 	    		sum+=this.imageToConvBias[filterNum];
@@ -283,7 +290,7 @@ public class NeuralNet {
 	    		
 	    		//System.out.println(sum);
 	    		//System.out.println("startX " + startX + " startY " + startY);
-	    		if( (startX == (convToInputWeights[0][0].length-1)) && (startY == (convToInputWeights[0].length-1))){finished = true; break;}
+	    		if( (startX == (this.imageXDim-this.strideX-1)) && (startY == (this.imageYDim-this.strideY-1))){finished = true; break;}
 	    		if(startX == (convToInputWeights[0][0].length-1)){
 	    			startX = 0;
 	    			startY += 1;
@@ -292,10 +299,9 @@ public class NeuralNet {
 	    		}		
     		}
     	}
+    	
     		
-    	
-    	
-    	double[] inputActivations = new double[this.numInput];
+    	this.inputActivations = new double[this.numInput];
     	
     	for(int inputNeuron = 0; inputNeuron<inputActivations.length; inputNeuron++){
     		double sum = 0.0;
@@ -311,7 +317,8 @@ public class NeuralNet {
     	}
     	
     	
-    	   	
+    	
+    	   
     	
     	/*
     	 *OLD CODE BELOW 
@@ -331,11 +338,11 @@ public class NeuralNet {
         }
         
         //Vector containing a value for each output node output
-        double[] outputPreds = new double[numOutputs];
+        this.outputPreds = new double[numOutputs];
         //Vector containing a value for each hidden node output
-        double[] hiddenPreds = new double[numHidden+bias];
+        this.hiddenPreds = new double[numHidden+bias];
         //Matrix containing both output predictions and hidden predictions so both can be returned
-        double[][] returnValues = new double[2][];
+        
         
         
         //For each of the hidden nodes                ----- Bias isn't getting a calculated input----
@@ -348,7 +355,13 @@ public class NeuralNet {
             hiddenPreds[hiddenNodeIndex] = relu(sum);
             
         }
-          
+       
+      
+        
+        
+        
+        
+        
         
         //Add bias
         hiddenPreds[numHidden] = 1;
@@ -362,7 +375,7 @@ public class NeuralNet {
             }
 
            // outputPreds[outputNodeIndex] = sum;// sigmoid(sum);
-           outputPreds[outputNodeIndex] = sigmoid(sum)
+           outputPreds[outputNodeIndex] = sigmoid(sum);
         }
         
        /*prepSoftMax(outputPreds);
@@ -370,29 +383,51 @@ public class NeuralNet {
         	System.out.println(getSoftMax(outputNodeIndex));
         }*/
        
-        returnValues[0] = hiddenPreds;
-        returnValues[1] = outputPreds;
         
-//===================================END OF COMMENT FOR TESTING ===================================
-     return returnValues;   
+//
     }
     
-    private void backProp(double[][] inputMatrix, int[] answers){
+    
+    /*
+     * @Param inputMatrix a list of input matricies
+     * 
+     * 
+     * 
+     */
+    private void backProp(double[][][] inputMatrix, int[] answers){
+    	
+    	
+    	
+    
         //Initialize gradient for connections between input and hidden
         double[] grad1 = new double[this.weights_1.length];
         //Initialize gradient for connections between hidden and output
         double[] grad2 = new double[this.weights_2.length];
+        
+        
+        //Initialize gradient for connections between conv and input
+        double[][][][] gradConvToInput = new double[numInput][numFilters][imageYDim-strideY][imageXDim-strideX];
+        
+        //Initialize gradient for connections between image and conv
+        //this update is different than the others because these weights are shared
+        double[][][] gradImageToConv = new double[numFilters][strideY][strideX];
 
+        
         
         
         //Iterate over the entire training set
         for(int trainingExample = 0; trainingExample<inputMatrix.length; trainingExample++){
+        	forwardProp(inputMatrix[trainingExample]);
+   
             //One hot encode answer
             double[] answerVector = oneHotEncode(answers[trainingExample]);
             //Get activations for hidden and output layers
-            double[][] predictions = forwardProp(inputMatrix[trainingExample]);
+            double[][] predictions = new double[2][];
+            predictions[1] = outputPreds;
+            predictions[0] = hiddenPreds;
+            
             //Calculate each output nodes' error
-            double[] errors = getError(predictions[1], answerVector);
+            double[] errors = getError(outputPreds, answerVector);
             
             
             //Calculate output delta
@@ -400,6 +435,13 @@ public class NeuralNet {
             
             //Calculate hidden delta
             double[] hiddenDelta = getHiddenDelta(outputDelta, predictions);
+            
+            
+            //Calculate inputDelta
+            double[] inputDelta = getInputDelta(hiddenDelta);
+            
+            //Calulate convDelta
+            double[][][] convDelta = getConvDelta(inputDelta);
             
             
             
@@ -412,14 +454,7 @@ public class NeuralNet {
             
             //accumulate hidden deltas
             
-            /*
-            *
-            *
-            *
-            *
-            */
-            
-            
+          
             
             for(int inputNode = 0; inputNode<(inputMatrix[trainingExample].length+bias); inputNode++){
                 for(int hiddenNode = 0; hiddenNode</*numOutputs*/numHidden; hiddenNode++){
@@ -430,6 +465,37 @@ public class NeuralNet {
                     }
                 }
             }
+            
+            
+            
+          
+            
+            
+            
+           //accumulate inputDelta
+            
+            
+            for(int filterNum = 0; filterNum < this.numFilters; filterNum++){
+    			for(int y = 0; y< convPreds[0].length; y++){
+    				for(int x = 0; x<convPreds[0][0].length; x++){
+    					//for each weight connecting to the input node:
+    					for(int inputNode = 0; inputNode<this.numInput; inputNode++){
+    						gradConvToInput[inputNode][filterNum][y][x] += ;
+    						 
+    					}
+    					
+    				}
+    			}
+    			
+    			//Calculate and accumulate bias:
+    			//convToInputBias[filterNum]
+    		}
+            
+            
+          // accumulate convDeltas
+            
+            
+            
         //End of code calculating batch gradient    
         }
 
@@ -450,6 +516,45 @@ public class NeuralNet {
             }
         }
 
+    }
+    
+    private double[][][] getConvDelta(double[] nextDelta){
+		double[][][] convDelta = new double[this.numFilters][convPreds[0].length][convPreds[0][0].length];
+    	
+		for(int filterNum = 0; filterNum < this.numFilters; filterNum++){
+			for(int y = 0; y< convPreds[0].length; y++){
+				for(int x = 0; x<convPreds[0][0].length; x++){
+					//for each weight connecting to the input node:
+					for(int inputNode = 0; inputNode<this.numInput; inputNode++){
+						//this.convToInputWeights = new double[numInput][numFilters][imageYDim-strideY][imageXDim-strideX];
+						convDelta[filterNum][y][x] += convToInputWeights[inputNode][filterNum][y][x]*nextDelta[inputNode]; 
+					}
+					
+					convDelta[filterNum][y][x]*=reluPrime(convPreds[filterNum][y][x]);
+				}
+			}
+		}
+    	
+    	return null;
+    	
+    }
+    //Does this work? My heads not in it...
+    /*
+     * Dont forget to do the weight update in backprop
+     * 
+     */
+    private double[] getInputDelta(double[] nextDelta){
+    	double[] inputDelta = new double[this.numInput+bias];
+    	for(int inputNode=0; inputNode<inputDelta.length; inputNode++){
+    		for(int hiddenNode = 0; hiddenNode<(numHidden+bias); hiddenNode++){
+    			inputDelta[inputNode] += weights_1[inputNode + (inputNode*(numInput+bias))] * nextDelta[hiddenNode];
+    		}
+    		inputDelta[inputNode] *= reluPrime(inputActivations[inputNode]);
+    	}
+    	
+
+
+    	return inputDelta;
     }
     
     private double[] getOutputDelta(double[] errors, double[][] predictions){
@@ -495,6 +600,9 @@ public class NeuralNet {
         }
         
         nnn.forwardProp(testImage);
+        
+        
+        
      /*   Random rand = new Random();
         double[][] trainingData = new double[8000][784];
         double[][] testingData = new double[4993][784];
