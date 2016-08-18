@@ -361,14 +361,14 @@ public class NeuralNet {
                 sum += hiddenPreds[hiddenNodeIndex] * weights_2[hiddenNodeIndex+(outputNodeIndex*(numHidden+bias))];
             }
 
-            outputPreds[outputNodeIndex] = sum;// sigmoid(sum);
-           
+           // outputPreds[outputNodeIndex] = sum;// sigmoid(sum);
+           outputPreds[outputNodeIndex] = sigmoid(sum)
         }
         
-        prepSoftMax(outputPreds);
+       /*prepSoftMax(outputPreds);
         for(int outputNodeIndex = 0; outputNodeIndex<outputPreds.length; outputNodeIndex++){
         	System.out.println(getSoftMax(outputNodeIndex));
-        }
+        }*/
        
         returnValues[0] = hiddenPreds;
         returnValues[1] = outputPreds;
