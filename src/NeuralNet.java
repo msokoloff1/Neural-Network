@@ -368,21 +368,21 @@ public class NeuralNet {
     	Hashtable<String, String> commandArgs = new Hashtable<String, String>();
     	commandArgs.put("-input_nodes", "784");
     	commandArgs.put("-hidden_nodes", "25");
-    	commandArgs.put("-output_classess", "3");
+    	commandArgs.put("-output_classes", "3");
     	commandArgs.put("-num_iters", "200");
     	commandArgs.put("-input_path", "../lib/012mnist.csv");
     	commandArgs.put("-training_examples", "8000");
     	commandArgs.put("-testing_examples", "4993");
     	commandArgs.put("-load_saved", "false");
     	
-    	String[] commandLineArgs = {"-input_nodes","-hidden_nodes", "-output_classess","-num_iters","-input_path","-training_examples","-testing_examples","-load_saved","-help"};
+    	String[] commandLineArgs = {"-input_nodes","-hidden_nodes", "-output_classes","-num_iters","-input_path","-training_examples","-testing_examples","-load_saved","-help"};
     	    	
     	if(args.length > 0) {
 			if(args[0].equals("-help")) {
 				System.out.println(
 						   "-input_nodes       : Number of input nodes \n"
 						+  "-hidden_nodes      : Number of hidden nodes\n"
-						+  "-output_classess   : Number of output classess\n"
+						+  "-output_classes    : Number of output classes\n"
 						+  "-num_iters         : Number of iterations to run back propogation\n"
 						+  "-input_path        : CSV to be used for training and testing data\n"
 						+  "-training_examples : Number of examples in input file to use for training\n"
@@ -398,7 +398,7 @@ public class NeuralNet {
     	
     	int inputNodes = Integer.parseInt(commandArgs.get("-input_nodes")); 
     	int hiddenNodes = Integer.parseInt(commandArgs.get("-hidden_nodes"));
-    	int numOutputClasses = Integer.parseInt(commandArgs.get("-output_classess"));
+    	int numOutputClasses = Integer.parseInt(commandArgs.get("-output_classes"));
     	int numIters = Integer.parseInt(commandArgs.get("-num_iters"));
     	String inputDataPath = commandArgs.get("-input_path");
     	int trainingSetSize = Integer.parseInt(commandArgs.get("-training_examples"));
