@@ -38,7 +38,7 @@ If you wish to use another dataset or alter other parameters there are command l
  * ``` java NeuralNet -help ```
  * <img src="./lib/helpScreenUpdate.png" width ="400px", height="100px"></img>
 * Example of using command line parameters:
- * ``` java NeuralNet -num_iters 200 -hidden_nodes  ```  
+ * ``` java NeuralNet -num_iters 200 -hidden_nodes 25 ```  
 * Using a different dataset:
  * You have to make sure the structure of the csv is the following:
   * Each row is a single example
