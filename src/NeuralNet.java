@@ -58,7 +58,7 @@ public class NeuralNet {
     }
 
     /*
-     * @interation : Current iterations number
+     * @iteration : Current iterations number
      * Returns the learning rate used to apply gradients
      */
     private double computeLearningRate(int iteration) {
